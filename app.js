@@ -9,11 +9,13 @@ const User = require('./models/user.js')
 const userRouter = require('./routers/user.js')
 const prodRouter = require('./routers/product.js')
 
+require('dotenv').config()
+
 
 
 const app = express()
 
-app.listen(3000)
+app.listen(process.env.ROUTE)
 //app set
 app.set('views',path.join(__dirname,'views'))
 app.set('view engine','ejs')
@@ -26,7 +28,7 @@ app.use(userRouter)
 app.use(prodRouter)
 
 //my url for database
-const url = "mongodb+srv://tgdavis1:test1234@cluster0.tqgynqo.mongodb.net/infinity-marketplace?retryWrites=true&w=majority&appName=Cluster0"
+const url = process.env.MONGOURL
 //connects to database
 mongoose.connect(url,(err)=>{
     if(err)

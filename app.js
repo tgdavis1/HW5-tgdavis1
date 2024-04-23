@@ -7,6 +7,7 @@ const Note = require('./models/product.js')
 const User = require('./models/user.js')
 const bcrypt  = require('bcrypt')
 const session = require('express-session')
+const MongoStore = require('connect-mongo')
 
 const userRouter = require('./routers/user.js')
 const prodRouter = require('./routers/product.js')
@@ -26,8 +27,12 @@ app.set('view engine','ejs')
 app.use(express.urlencoded({extended:true}))
 app.use(express.static(path.join(__dirname,'public')))
 app.use(express.json())
-app.use(userRouter)
-app.use(prodRouter)
+
+
+
+
+//my url for database
+const url = process.env.MONGOURL
 
 app.use(session({
     secret:process.env.KEY,
@@ -37,8 +42,8 @@ app.use(session({
 
 }))
 
-//my url for database
-const url = process.env.MONGOURL
+app.use(userRouter)
+app.use(prodRouter)
 //connects to database
 mongoose.connect(url,(err)=>{
     if(err)

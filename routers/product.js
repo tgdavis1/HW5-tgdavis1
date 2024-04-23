@@ -1,118 +1,66 @@
-const express = require('express')
-const Product = require('../models/product.js')
-const User = require('../models/user.js')
+const express = require("express");
+const Product = require("../models/product.js");
+const User = require("../models/user.js");
+const authenticateUser = require("../middleware/authenticateUser");
 
-
-const router = express.Router()
+const router = express.Router();
 
 //buys a product
-router.post('/products/buy',(req,res)=>{
-    //checks if buyer exists
-    User.findOne({user_name:req.body.user_name},(error,foundBuy)=>{
-        if(error||foundBuy==null)
-            res.send("Buyer Not Found")
-        else{
-            //find product
-            Product.findOne({_id:req.body.productID},(error,foundProd)=>{
-                if(error||foundProd==null)
-                res.send("Product Not Found")
-                else{
-                    //if buyer already owns
-                    if(foundBuy.id==foundProd.owner)
-                        res.send("Oops, "+foundBuy.user_name+" already owns this item")
-                    if(foundBuy.id!=foundProd.owner){
-                        //if buyer doesnt have enough money
-                        if(foundBuy.balance<foundProd.price)
-                            res.send("Oops, "+foundBuy.user_name+" has insufficient funds")
-                        if(foundBuy.balance>=foundProd.price){
-                            //find owner
-                            User.findById(foundProd.owner,(error,foundOwner)=>{
-                                //at this point both users and the product being exchanged has been found and all checks are done
-                                if(error||foundOwner==null)
-                                    res.send("Owner Not Found")
-                                else{
-                                    //update buyers info
-                                    User.updateOne({ _id: foundBuy._id },{balance:foundBuy.balance-foundProd.price},(error)=>{
-                                        //update seller balance
-                                        User.updateOne({_id:foundOwner._id},{balance:foundOwner.balance+foundProd.price},(error)=>{
-                                            //update items owner
-                                            Product.updateOne({_id:foundProd._id},{owner:foundBuy._id},(error)=>{
-                                                res.send("Transaction successful!")
-                                            })
-                                        })
-                                    
-                                    
-                                    })
-                                    
-                                }
-                            })
-                        }
-                    }
-                }
-            })
-            
-            
-        
-        }
-    })
-    
-
-})
-
-
+router.post("/products/buy", authenticateUser, async (req, res) => {
+  //find product
+  const product = await Product.findOne({ _id: req.body.productID });
+  //if buyer already owns
+  if (req.user._id == product.owner)
+    res.send("Oops, " + req.user.user_name + " already owns this item");
+  if (req.user._id != product.owner) {
+    //if buyer doesnt have enough money
+    if (req.user.balance < product.price)
+      res.send("Oops, " + req.user.user_name + " has insufficient funds");
+    if (req.user.balance >= product.price) {
+      //find owner
+      const Seller = await User.findById(product.owner);
+      //update buyers info
+      await User.updateOne({ _id: req.user._id });
+      //update seller balance
+      await User.updateOne({ _id: Seller._id });
+      //update items owner
+      await Product.updateOne({ _id: product._id });
+      res.send("Transaction successful!");
+    }
+  }
+});
 
 //displays all products
-router.get('/products',(req,res)=>{
-    Product.find({},(error,result)=>{
-        if(error)
-            res.send(error)
-        else{
-            //makes an array of user
-            const userArr  = result.map(u=>{
-                return {_id:u._id,name:u.name,price:u.price,owner:u.owner}
-            })
-        
-            res.send(userArr)
-        }
-    })
-})
+router.get("/products", async (req, res) => {
+  let products = await Product.find({});
+  res.send(products);
+});
 
 //creates a product
-router.post('/products',(req,res)=>{
-    User.findOne({user_name:req.body.seller},(error,result)=>{
-        if(error)
-            console.log(error)
-        else{
-            const newProd = new Product({name:req.body.name,price:req.body.price,owner:result._id})
-            newProd.save((error,response)=>{
-            if(error)
-                res.send(error)
-            else
-                res.send(response)
-    })
-        }
-    })
-    
-
-})
-
-
+router.post("/products", authenticateUser, async (req, res) => {
+  const newProd = new Product({
+    name: req.body.name,
+    price: req.body.price,
+    owner: req.user._id,
+  });
+  const response = await newProd.save();
+  res.send(response);
+});
 
 //deletes a product by id
-router.delete('/products/:id',(req,res)=>{
-    const id = req.body.title
+router.delete("/products/:id", authenticateUser, async (req, res) => {
+  const id = req.params.id;
+    const userID=req.user._id+""
+  const item = await Product.findOne({ _id: id });
+  const itemOwner=item.owner+""
+  //console.log(itemOwner+"=="+userID)
+  //console.log(itemOwner==userID)
+  if (item.owner != userID){
+    res.send({ Error: "You Do Not Own This Item" });
+  } else {
+    let deleted = await Product.deleteOne({ _id: id });
+    res.send(deleted);
+  }
+});
 
-    Product.findOneAndDelete({id:id},(error,result)=>{
-        if(error)
-            res.send(error)
-        else{
-            if(result == null)
-                res.send({message:"Product not found.."})
-            else
-                res.send(result)
-        }
-    })
-   
-})
-
-module.exports = router
+module.exports = router;

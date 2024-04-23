@@ -5,6 +5,8 @@ const path = require('path')
 const mongoose = require('mongoose')
 const Note = require('./models/product.js')
 const User = require('./models/user.js')
+const bcrypt  = require('bcrypt')
+const session = require('express-session')
 
 const userRouter = require('./routers/user.js')
 const prodRouter = require('./routers/product.js')
@@ -26,6 +28,14 @@ app.use(express.static(path.join(__dirname,'public')))
 app.use(express.json())
 app.use(userRouter)
 app.use(prodRouter)
+
+app.use(session({
+    secret:process.env.KEY,
+    resave:false,
+    saveUninitialized:false,
+    store:MongoStore.create({mongoUrl:url})
+
+}))
 
 //my url for database
 const url = process.env.MONGOURL

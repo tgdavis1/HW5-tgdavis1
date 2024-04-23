@@ -22,8 +22,12 @@ router.get('/users',(req,res)=>{
     })
 })
 //router to create user
-router.post('/users',(req,res)=>{
-    const u1 = new User(req.body)
+router.post('/users/register',async(req,res)=>{
+    //hashes password
+    const pass = req.body.password
+    const hashedPassword = await bcrypt.hash(pass,8)
+    //creates user
+    const u1 = new User({name:req.body.name,user_name:req.body.user_name,password:hashedPassword})
     u1.save((error,response)=>{
         if(error)
             res.send(error)
@@ -85,6 +89,27 @@ router.delete('/users/:user_name',(req,res)=>{
         }
     })
     
+})
+
+router.post('/login',async (req,res)=>{
+
+    const user = await User.findOne({user_name:req.body.user_name})
+    if(!user){
+        console.log("User not found")
+        return res.redirect('/?auth=fail')
+    }
+    
+    const isMatch = await bcrypt.compare(req.body.txtPassword,user.password)
+    if(!isMatch){
+        console.log("Passwords don't match")
+        return res.redirect('/?auth=fail')
+    }
+    req.session.user_id = user._id
+
+    return res.redirect('/dashboard')
+      
+    
+
 })
 
 module.exports = router

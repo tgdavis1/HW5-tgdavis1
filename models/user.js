@@ -3,7 +3,8 @@ const mongoose = require('mongoose')
 //Model for a user
 const UserSchema  = mongoose.Schema({
     name:{type:String, required:true},
-    user_name:{type:String, required:true},
+    user_name:{type:String, required:true,unique:true},
+    password:{type:String, required:true},
     balance:{type:Number,default:100}
 })
 //virtual fields

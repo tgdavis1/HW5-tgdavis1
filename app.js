@@ -45,7 +45,7 @@ app.use(session({
 app.use(userRouter)
 app.use(prodRouter)
 //connects to database
-mongoose.connect()
+mongoose.connect(url)
 .then(console.log("Successfully connected to DB.."))
 .catch(console.log("Error connecting to DB.."))
 

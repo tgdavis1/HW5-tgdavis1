@@ -7,27 +7,36 @@ const router = express.Router();
 
 //buys a product
 router.post("/products/buy", authenticateUser, async (req, res) => {
+  try{
   //find product
   const product = await Product.findOne({ _id: req.body.productID });
   //if buyer already owns
-  if (req.user._id == product.owner)
+  if (req.user._id+"" == product.owner+""){
     res.send("Oops, " + req.user.user_name + " already owns this item");
+  return
+  }
   if (req.user._id != product.owner) {
     //if buyer doesnt have enough money
-    if (req.user.balance < product.price)
+    if (req.user.balance < product.price){
       res.send("Oops, " + req.user.user_name + " has insufficient funds");
+      return
+    }
     if (req.user.balance >= product.price) {
       //find owner
       const Seller = await User.findById(product.owner);
       //update buyers info
-      await User.updateOne({ _id: req.user._id });
+      await User.updateOne({ _id: req.user._id },{balance:req.user.balance-product.price});
       //update seller balance
-      await User.updateOne({ _id: Seller._id });
+      await User.updateOne({ _id: Seller._id },{balance:Seller.balance+product.price});
       //update items owner
-      await Product.updateOne({ _id: product._id });
+      await Product.updateOne({ _id: product._id },{owner:req.user._id});
       res.send("Transaction successful!");
     }
   }
+}
+catch(e){
+  res.send(e)
+}
 });
 
 //displays all products

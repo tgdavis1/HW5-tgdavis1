@@ -18,7 +18,7 @@ require('dotenv').config()
 
 const app = express()
 
-app.listen(process.env.ROUTE)
+app.listen(process.env.PORT)
 //app set
 app.set('views',path.join(__dirname,'views'))
 app.set('view engine','ejs')
@@ -45,9 +45,7 @@ app.use(session({
 app.use(userRouter)
 app.use(prodRouter)
 //connects to database
-mongoose.connect(url,(err)=>{
-    if(err)
-        console.log("Error connecting to DB..")
-    else
-        console.log("Successfully connected to DB..")
-})
+mongoose.connect()
+.then(console.log("Successfully connected to DB.."))
+.catch(console.log("Error connecting to DB.."))
+
